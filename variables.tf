@@ -5,3 +5,9 @@ variable "prefix" {
 variable "location" {
   type = string
 }
+
+variable "password" {
+  type      = string
+  sensitive = true
+  default   = "p@sSm0rD1!"
+}

@@ -44,10 +44,9 @@ resource "azurerm_linux_virtual_machine" "tf_linux_vm" {
     azurerm_network_interface.tf_nic.id,
   ]
 
-  admin_ssh_key {
-    username   = "adminuser"
-    public_key = file("~/.ssh/id_rsa.pub")
-  }
+  # It is recommended to use ssh-keys instead of password but since we are just testing we are using password
+  admin_password                  = var.password
+  disable_password_authentication = false
 
   os_disk {
     caching              = "ReadWrite"
