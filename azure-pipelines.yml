@@ -1,0 +1,72 @@
+# Setting up the trigger for our build - 1
+
+trigger:
+  - main
+
+# Setting up stages of our build pipeline - 2
+stages:
+  - stage: Build
+    # Defining jobs for the Build stage - 3
+    jobs:
+      - job: BuildTerraform
+        # Selecting pool (agent) to run this particular job - 4
+        pool:
+          vmImage: 'ubuntu-latest'
+        # Adding steps/tasks for the particular job - 5
+        steps:
+          - task: TerraformInstaller@1
+            displayName: Installing Terraform
+            inputs:
+              terraformVersion: 'latest'
+
+          - task: TerraformTaskV4@4
+            displayName: Tf init
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              backendServiceArm: 'Pay-As-You-Go(f53d7b48-bf4a-4031-8adc-c7b9230946a0)'
+              backendAzureRmResourceGroupName: 'tf_backend_rg'
+              backendAzureRmStorageAccountName: 'tfbackend97'
+              backendAzureRmContainerName: 'tfstate-remote'
+              backendAzureRmKey: 'prod.terraform.tfstate'
+          
+          - task: TerraformTaskV4@4
+            displayName: Tf validate
+            inputs:
+              provider: 'azurerm'
+              command: 'validate'
+          
+          - task: TerraformTaskV4@4
+            displayName: Tf fmt
+            inputs:
+              provider: 'azurerm'
+              command: 'custom'
+              customCommand: 'fmt'
+              outputTo: 'console'
+              environmentServiceNameAzureRM: 'Pay-As-You-Go(f53d7b48-bf4a-4031-8adc-c7b9230946a0)'
+          
+          - task: TerraformTaskV4@4
+            displayName: Tf plan
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              commandOptions: -out $(Build.SourcesDirectory)/tfplanfile
+              environmentServiceNameAzureRM: 'Pay-As-You-Go(f53d7b48-bf4a-4031-8adc-c7b9230946a0)'
+          
+          # After plan we are archiving the file
+          - task: ArchiveFiles@2
+            displayName: Archieve Files
+            inputs:
+              rootFolderOrFile: '$(Build.SourcesDirectory)/'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+              replaceExistingArchive: true
+          
+          # Publishing the artifact to the Azure Pipeline
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: '$(Build.BuildId).build'
+              publishLocation: 'Container'
+
