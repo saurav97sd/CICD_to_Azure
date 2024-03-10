@@ -7,7 +7,6 @@ variable "location" {
 }
 
 variable "password" {
-  type      = string
+  type = string
   sensitive = true
-  default   = "p@sSm0rD1!"
 }
